@@ -10,22 +10,31 @@ struct SpellChecker {
 }
 
 impl SpellChecker {
-    fn new(filename: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let file = File::open(filename)?;
-        let reader = BufReader::new(file);
-        let re = Regex::new(r"\w+").unwrap();
-        let mut words = HashMap::new();
-        let mut total_words = 0;
+   fn new(filename: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    println!("Opening file: {}", filename);
+    let file = File::open(filename)?;
+    let reader = BufReader::new(file);
+    let re = Regex::new(r"\w+").unwrap();
+    let mut words = HashMap::new();
+    let mut total_words = 0;
 
-        for line in reader.lines() {
-            let line = line?;
-            for word in re.find_iter(&line.to_lowercase()) {
-                *words.entry(word.as_str().to_string()).or_insert(0) += 1;
-                total_words += 1;
+    for (index, line) in reader.lines().enumerate() {
+        let line = line?;
+        if index < 5 {  // Print first 5 lines for debugging
+            println!("Line {}: {}", index, line);
+        }
+        for word in re.find_iter(&line.to_lowercase()) {
+            let word = word.as_str().to_string();
+            *words.entry(word.clone()).or_insert(0) += 1;
+            total_words += 1;
+            if total_words <= 10 {  // Print first 10 words for debugging
+                println!("Word {}: {}", total_words, word);
             }
         }
-        Ok(SpellChecker { words, total_words })
     }
+    println!("Finished processing file. Total words: {}", total_words);
+    Ok(SpellChecker { words, total_words })
+}
     
     fn p(&self, word: &str) -> f64 {
         *self.words.get(word).unwrap_or(&0) as f64 / self.total_words as f64
@@ -99,7 +108,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     println!("Total words in dictrionary: {}", checker.total_words);
 
-    let test_words = vec!["Spelling", "korrectud"];
     loop {
         print!("Enter a word to correct (or 'quit' to exit):");
         io::stdout().flush()?;
@@ -111,6 +119,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if word.to_lowercase() == "quit"{
             break;
         }
+
+        let correction = checker.correction(word);
+        println!("Original: {}, Corrected: {}", word, correction);
     }
+    println!("Thank you for using the spell checker!");
     Ok(())
 }
